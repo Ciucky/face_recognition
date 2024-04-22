@@ -25,7 +25,7 @@ facerec = dlib.face_recognition_model_v1(face_rec_model_path)
 
 def live_face_recognition():
     video_capture = cv2.VideoCapture(0)
-    frame_skip = 120  # Process every 600 frames
+    frame_skip = 120  # Process every 120 frames
     frame_count = 0
     labels = []  # To store the face labels
 
