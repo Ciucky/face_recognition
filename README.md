@@ -32,7 +32,7 @@ This script captures a single photo from your webcam, then processes it to detec
 
 - **To run this script:**
 ```bash
-python static_face_recognition.py
+python static_recognition.py
 ```
 Press 'c' to capture the photo during live preview.
 
@@ -42,14 +42,16 @@ This script provides a live video feed from your webcam and performs face recogn
 
 - **To run this script:**
 ```bash
-python live_face_recognition.py
+python live_recognition.py
 ```
 Press 'q' to quit the live feed. The live feed shows recognized faces with labels.
 
 ## Repository Structure
 
 - `encode_faces.py` - Script to generate and store face encodings.
-- `static_face_recognition.py` - Script to perform face recognition on a single captured photo.
-- `live_face_recognition.py` - Script for real-time face recognition using webcam.
+- `static_recognition.py` - Script to perform face recognition on a single captured photo.
+- `live_recognition.py` - Script for real-time face recognition using webcam.
 - `encodings.pickle` - Serialized file containing face encodings.
 - `names.pickle` - Serialized file containing corresponding names for the encodings.
+- `dlib_face_recognition_resnet_model_v1.dat` - Dlib face recognition model file.
+- `shape_predictor_68_face_landmarks.dat` - Dlib model for detecting facial landmarks.
