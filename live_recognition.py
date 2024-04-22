@@ -1,65 +1,70 @@
-import face_recognition
 import cv2
+import dlib
+import numpy as np
 import pickle
+import os
 
-# Load face encodings and names from disk
-try:
-    with open("encodings.pickle", "rb") as ef:
+# Load known face encodings and names
+encodings_file = 'encodings.pickle'
+names_file = 'names.pickle'
+if os.path.exists(encodings_file) and os.path.exists(names_file):
+    with open(encodings_file, 'rb') as ef:
         known_face_encodings = pickle.load(ef)
-    with open("names.pickle", "rb") as nf:
+    with open(names_file, 'rb') as nf:
         known_face_names = pickle.load(nf)
-except Exception as e:
-    print(f"Failed to load encodings or names: {e}")
+else:
+    print("Error: Encoding files not found.")
     exit(1)
 
-# Initialize the webcam
-video_capture = cv2.VideoCapture(0)
+# Initialize Dlib's face detector and the face recognition model
+detector = dlib.get_frontal_face_detector()
+predictor_path = 'shape_predictor_68_face_landmarks.dat'
+face_rec_model_path = 'dlib_face_recognition_resnet_model_v1.dat'
+sp = dlib.shape_predictor(predictor_path)
+facerec = dlib.face_recognition_model_v1(face_rec_model_path)
 
-if not video_capture.isOpened():
-    print("Error: Webcam could not be accessed.")
-    exit(1)
+def live_face_recognition():
+    video_capture = cv2.VideoCapture(0)
+    frame_skip = 120  # Process every 600 frames
+    frame_count = 0
+    labels = []  # To store the face labels
 
-try:
     while True:
         ret, frame = video_capture.read()
         if not ret:
-            print("Failed to grab frame")
+            print("Error: Unable to capture image from webcam.")
             break
 
-        try:
-            # Convert the image from BGR color (which OpenCV uses) to RGB color
-            rgb_frame = frame[:, :, ::-1]
+        # Clear previous drawings and labels every 600 frames
+        if frame_count % frame_skip == 0:
+            labels.clear()  # Clear old labels for new processing
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            dets = detector(rgb_frame, 1)
+            print(f"Detected {len(dets)} faces.")
 
-            # Find all the faces and face encodings in the current frame of video
-            face_locations = face_recognition.face_locations(rgb_frame)
-            print(f"Detected {len(face_locations)} faces in the frame.")
-
-            face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-
-            # Display the results
-            for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-
+            for k, d in enumerate(dets):
+                shape = sp(rgb_frame, d)
+                face_descriptor = facerec.compute_face_descriptor(rgb_frame, shape)
+                distances = np.linalg.norm(known_face_encodings - np.array(face_descriptor), axis=1)
                 name = "Unknown"
-                if True in matches:
-                    first_match_index = matches.index(True)
-                    name = known_face_names[first_match_index]
+                if len(distances) > 0 and np.min(distances) < 0.6:
+                    name = known_face_names[np.argmin(distances)]
 
-                # Draw a box around the face and label with a name
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 0.5, (255, 255, 255), 1)
+                labels.append((d, name))
+                print(f"Face {k + 1}, Name: {name}")  # Debug output for face name recognition
 
-            # Display the resulting image
-            cv2.imshow('Video', frame)
-            if cv2.waitKey(1000) & 0xFF == ord('q'):  # Delay increased to 1 second per frame
-                break
-        except Exception as e:
-            print(f"Error during face processing: {e}")
-            continue
+        # Draw the results from the latest processed frame
+        for d, name in labels:
+            cv2.rectangle(frame, (d.left(), d.top()), (d.right(), d.bottom()), (0, 255, 0), 2)
+            cv2.putText(frame, name, (d.left() + 6, d.bottom() - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
 
-finally:
-    # Release handle to the webcam
+        cv2.imshow('Live Face Recognition', frame)
+        frame_count += 1
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
     video_capture.release()
     cv2.destroyAllWindows()
+
+live_face_recognition()
