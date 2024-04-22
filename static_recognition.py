@@ -4,7 +4,6 @@ import pickle
 import os
 
 def capture_photo():
-    """Open a live preview of the webcam and capture a photo when a key is pressed."""
     video_capture = cv2.VideoCapture(0)  # Use the first webcam device
     if not video_capture.isOpened():
         print("Error: Unable to access the webcam.")
@@ -49,7 +48,6 @@ else:
     exit(1)
 
 def recognize_faces(image_path):
-    """Recognize faces in the specified image."""
     image = cv2.imread(image_path)  # Load the image from file
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert it from BGR to RGB
 
